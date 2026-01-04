@@ -1,0 +1,26 @@
+# Project docs
+plan.md
+
+# Go build artifacts
+/bin/
+/dist/
+/build/
+/release/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+
+# Logs
+*.log
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Temp
+/tmp/
