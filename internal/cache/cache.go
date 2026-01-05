@@ -57,18 +57,28 @@ func Detect(cacheDir string) ([]Entry, error) {
 
 // Invalidate removes cached plugin directories that match the npm package name.
 func Invalidate(cacheDir string, pluginName string) ([]string, error) {
+	if cacheDir == "" {
+		return nil, fmt.Errorf("%w: cache directory is empty", ErrInvalidCacheDir)
+	}
+	info, err := os.Stat(cacheDir)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidCacheDir, err)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("%w: %s", ErrInvalidCacheDir, cacheDir)
+	}
 	if pluginName == "" {
 		return nil, fmt.Errorf("plugin name is required")
 	}
 
 	entries, err := Detect(cacheDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("detect cache entries: %w", err)
 	}
 
 	base, err := filepath.Abs(cacheDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolve cache directory: %w", err)
 	}
 
 	removed := []string{}
@@ -77,10 +87,10 @@ func Invalidate(cacheDir string, pluginName string) ([]string, error) {
 			continue
 		}
 		if err := ensureWithin(base, entry.Path); err != nil {
-			return removed, err
+			return removed, fmt.Errorf("validate cache path %q: %w", entry.Path, err)
 		}
 		if err := os.RemoveAll(entry.Path); err != nil {
-			return removed, err
+			return removed, fmt.Errorf("remove cache entry %q: %w", entry.Path, err)
 		}
 		removed = append(removed, entry.Path)
 	}

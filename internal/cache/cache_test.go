@@ -58,6 +58,12 @@ func TestEnsureWithin(t *testing.T) {
 	}
 }
 
+func TestInvalidateEmptyCacheDir(t *testing.T) {
+	if _, err := Invalidate("", "foo"); err == nil {
+		t.Fatalf("expected error for empty cache dir")
+	}
+}
+
 func writePackageJSON(t *testing.T, dir string, content string) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
