@@ -66,6 +66,8 @@ func syncCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int {
 		return 0
 	}
 
+	refreshed := 0
+	missing := 0
 	for _, name := range plan.RefreshTargets {
 		removed, err := cache.Invalidate(cacheDir, name)
 		if err != nil {
@@ -73,12 +75,19 @@ func syncCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int {
 			return 1
 		}
 		if len(removed) == 0 {
-			fmt.Fprintf(stderr, "no cache entry found for %s\n", name)
+			missing++
+			continue
 		}
+		refreshed++
 	}
 
 	fmt.Fprintln(stdout, "")
-	fmt.Fprintf(stdout, "Refreshed %d plugin(s). Run OpenCode to reinstall.\n", len(plan.RefreshTargets))
+	if refreshed > 0 {
+		fmt.Fprintf(stdout, "Refreshed %d plugin(s). Run OpenCode to reinstall.\n", refreshed)
+	}
+	if missing > 0 {
+		fmt.Fprintf(stdout, "No cache entry found for %d plugin(s); OpenCode will install on next run.\n", missing)
+	}
 	if plan.SkippedUnpinned > 0 {
 		fmt.Fprintf(stdout, "Skipped %d unpinned plugin(s).\n", plan.SkippedUnpinned)
 	}
@@ -94,18 +103,12 @@ func buildSyncPlan(specs []opencode.PluginSpec, entries []cache.Entry) syncPlan 
 		installedByName[entry.Name] = entry
 	}
 
-	seen := map[string]struct{}{}
 	rows := []syncRow{}
 	targets := []string{}
 	skippedUnpinned := 0
 	localCount := 0
 
 	for _, spec := range specs {
-		if _, ok := seen[spec.Name]; ok {
-			continue
-		}
-		seen[spec.Name] = struct{}{}
-
 		if spec.Source == opencode.SourceLocal {
 			localCount++
 			rows = append(rows, syncRow{
