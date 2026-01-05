@@ -146,9 +146,21 @@ func runUpgrade(args []string, stdout io.Writer, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "only one of --to, --major, --minor, --patch is allowed")
 		return 2
 	}
+	if all && target != "" {
+		fmt.Fprintln(stderr, "cannot use --to with --all")
+		return 2
+	}
 
-	fmt.Fprintln(stderr, "upgrade is not implemented yet")
-	return 1
+	mode := ""
+	switch {
+	case major:
+		mode = "major"
+	case minor:
+		mode = "minor"
+	case patch:
+		mode = "patch"
+	}
+	return upgradeCommand(*opts, name, target, mode, all, stdout, stderr)
 }
 
 func runRollback(args []string, stdout io.Writer, stderr io.Writer) int {
