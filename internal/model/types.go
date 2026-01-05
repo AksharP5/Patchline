@@ -8,6 +8,7 @@ const (
 	StatusMismatch  Status = "mismatch"
 	StatusUnmanaged Status = "unmanaged"
 	StatusOutdated  Status = "outdated"
+	StatusUnknown   Status = "unknown"
 )
 
 type Plugin struct {

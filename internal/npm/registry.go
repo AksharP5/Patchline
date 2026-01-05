@@ -1,6 +1,7 @@
 package npm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"time"
 )
 
+// PackageInfo captures npm registry metadata needed for upgrades.
 type PackageInfo struct {
 	Name     string
 	Latest   string
@@ -23,22 +25,23 @@ type registryResponse struct {
 	Versions map[string]any    `json:"versions"`
 }
 
-func FetchPackageInfo(name string) (PackageInfo, error) {
+// FetchPackageInfo retrieves registry metadata for the given package.
+func FetchPackageInfo(ctx context.Context, name string) (PackageInfo, error) {
 	if name == "" {
 		return PackageInfo{}, fmt.Errorf("package name is required")
 	}
 
 	endpoint := "https://registry.npmjs.org/" + url.PathEscape(name)
 	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return PackageInfo{}, err
+		return PackageInfo{}, fmt.Errorf("fetch %s: %w", name, err)
 	}
 	req.Header.Set("Accept", "application/vnd.npm.install-v1+json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return PackageInfo{}, err
+		return PackageInfo{}, fmt.Errorf("fetch %s: %w", name, err)
 	}
 	defer resp.Body.Close()
 
@@ -47,13 +50,17 @@ func FetchPackageInfo(name string) (PackageInfo, error) {
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
-		return PackageInfo{}, fmt.Errorf("npm registry error: %s", strings.TrimSpace(string(body)))
+		message := strings.TrimSpace(string(body))
+		if message == "" {
+			message = resp.Status
+		}
+		return PackageInfo{}, fmt.Errorf("fetch %s: npm registry error: %s", name, message)
 	}
 
 	var payload registryResponse
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&payload); err != nil {
-		return PackageInfo{}, err
+		return PackageInfo{}, fmt.Errorf("fetch %s: %w", name, err)
 	}
 
 	latest := ""

@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// CompareSemver compares two semver strings and returns comparison result.
+// The bool return is false when parsing fails.
 func CompareSemver(current string, latest string) (int, bool) {
 	curMajor, curMinor, curPatch, ok := parseSemver(current)
 	if !ok {

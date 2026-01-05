@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	"github.com/AksharP5/Patchline/internal/cache"
 	"github.com/AksharP5/Patchline/internal/model"
@@ -21,18 +23,13 @@ type outdatedRow struct {
 }
 
 func outdatedCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int {
-	if opts.Offline {
-		fmt.Fprintln(stderr, "outdated requires registry access; remove --offline")
-		return 2
-	}
-
 	result, err := opencode.Discover(opts.ProjectRoot, opts.GlobalConfig, []string(opts.LocalDirs))
 	if err != nil {
 		fmt.Fprintf(stderr, "failed to discover plugins: %v\n", err)
 		return 1
 	}
 
-	cacheDir, _ := cache.ResolveDir(opts.CacheDir)
+	cacheDir, candidates := cache.ResolveDir(opts.CacheDir)
 	cacheEntries := []cache.Entry{}
 	if cacheDir != "" {
 		cacheEntries, err = cache.Detect(cacheDir)
@@ -40,7 +37,14 @@ func outdatedCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int
 			fmt.Fprintf(stderr, "failed to scan cache directory: %v\n", err)
 			return 1
 		}
+	} else if opts.CacheDir != "" {
+		fmt.Fprintf(stderr, "cache directory not found: %s\n", opts.CacheDir)
+	} else if len(candidates) > 0 {
+		fmt.Fprintf(stderr, "cache directory not found. Checked: %s\n", strings.Join(candidates, ", "))
 	}
+
+	ctx := context.Background()
+	fetchErrors := map[string]error{}
 
 	installedByName := map[string]cache.Entry{}
 	for _, entry := range cacheEntries {
@@ -57,9 +61,13 @@ func outdatedCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int
 		if _, ok := latestByName[spec.Name]; ok {
 			continue
 		}
-		info, err := npm.FetchPackageInfo(spec.Name)
+		if opts.Offline {
+			fetchErrors[spec.Name] = fmt.Errorf("offline")
+			continue
+		}
+		info, err := npm.FetchPackageInfo(ctx, spec.Name)
 		if err != nil {
-			fmt.Fprintf(stderr, "failed to fetch %s: %v\n", spec.Name, err)
+			fetchErrors[spec.Name] = err
 			continue
 		}
 		latestByName[spec.Name] = info.Latest
@@ -81,10 +89,13 @@ func outdatedCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int
 		status := string(model.StatusOK)
 		if installed == "missing" {
 			status = string(model.StatusMissing)
-		} else if latest != "" {
-			if cmp, ok := npm.CompareSemver(installed, latest); ok && cmp < 0 {
-				status = string(model.StatusOutdated)
+		} else if fetchErrors[spec.Name] != nil || latest == "" {
+			status = string(model.StatusUnknown)
+			if latest == "" {
+				latest = "unknown"
 			}
+		} else if cmp, ok := npm.CompareSemver(installed, latest); ok && cmp < 0 {
+			status = string(model.StatusOutdated)
 		}
 
 		rows = append(rows, outdatedRow{
@@ -105,6 +116,14 @@ func outdatedCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int
 	})
 
 	renderOutdatedTable(stdout, rows)
+	if opts.Offline {
+		fmt.Fprintln(stdout, "")
+		fmt.Fprintln(stdout, "Note: offline mode enabled; registry checks skipped.")
+	}
+	if len(fetchErrors) > 0 && !opts.Offline {
+		fmt.Fprintln(stdout, "")
+		fmt.Fprintf(stdout, "Note: failed to fetch %d package(s) from the registry.\n", len(fetchErrors))
+	}
 	if localCount > 0 {
 		fmt.Fprintln(stdout, "")
 		fmt.Fprintln(stdout, "Note: local plugins are unmanaged and excluded from outdated checks.")
