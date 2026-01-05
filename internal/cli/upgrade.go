@@ -75,6 +75,7 @@ func upgradeCommand(opts CommonOptions, name string, target string, mode string,
 
 	infoCache := map[string]npm.PackageInfo{}
 	updated := 0
+	skipped := 0
 	for _, targetSpec := range targets {
 		base := targetSpec.Pinned
 		if base == "" {
@@ -102,6 +103,12 @@ func upgradeCommand(opts CommonOptions, name string, target string, mode string,
 		}
 
 		newSpec := fmt.Sprintf("%s@%s", targetSpec.Name, resolved)
+		if strings.TrimSpace(targetSpec.Declared) == newSpec {
+			fmt.Fprintf(stdout, "Already on %s\n", newSpec)
+			skipped++
+			continue
+		}
+
 		installed := "missing"
 		if entry, ok := installedByName[targetSpec.Name]; ok {
 			installed = entry.Version
@@ -137,12 +144,19 @@ func upgradeCommand(opts CommonOptions, name string, target string, mode string,
 	}
 
 	if updated == 0 {
+		if skipped > 0 {
+			fmt.Fprintln(stdout, "All plugins already match the target versions.")
+			return 0
+		}
 		fmt.Fprintln(stdout, "No plugins upgraded.")
 		return 0
 	}
 
 	fmt.Fprintln(stdout, "")
 	fmt.Fprintf(stdout, "Updated %d plugin(s). Run OpenCode to reinstall.\n", updated)
+	if skipped > 0 {
+		fmt.Fprintf(stdout, "%d plugin(s) already matched the target.\n", skipped)
+	}
 	return 0
 }
 

@@ -20,19 +20,25 @@ func CompareSemver(current string, latest string) (int, bool) {
 	return compareSemver(currentSemver, latestSemver), true
 }
 
+// Semver represents a parsed semantic version.
 type Semver struct {
 	Major int
 	Minor int
 	Patch int
 }
 
+// UpgradeMode defines how target versions are selected.
 type UpgradeMode string
 
 const (
+	// UpgradeLatest selects the registry latest version.
 	UpgradeLatest UpgradeMode = "latest"
-	UpgradeMajor  UpgradeMode = "major"
-	UpgradeMinor  UpgradeMode = "minor"
-	UpgradePatch  UpgradeMode = "patch"
+	// UpgradeMajor selects the highest available major version.
+	UpgradeMajor UpgradeMode = "major"
+	// UpgradeMinor selects the highest version within the current major.
+	UpgradeMinor UpgradeMode = "minor"
+	// UpgradePatch selects the highest version within the current major/minor.
+	UpgradePatch UpgradeMode = "patch"
 )
 
 // SelectTargetVersion chooses a version string based on the upgrade mode.

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,5 +84,44 @@ func TestUpgradeCommandExplicitTarget(t *testing.T) {
 
 	if _, err := os.Stat(pluginDir); !os.IsNotExist(err) {
 		t.Fatalf("expected cache removal, got %v", err)
+	}
+}
+
+func TestUpgradeCommandSkipsIfUpToDate(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, "opencode.json")
+	config := `{"plugin": ["alpha@1.2.0"]}`
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cacheDir := filepath.Join(root, "cache")
+	pluginDir := filepath.Join(cacheDir, "alpha-cache")
+	writePackageJSON(t, pluginDir, `{"name":"alpha","version":"1.2.0"}`)
+
+	snapshotDir := filepath.Join(root, "snapshots")
+	opts := CommonOptions{
+		ProjectRoot: root,
+		CacheDir:    cacheDir,
+		SnapshotDir: snapshotDir,
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := upgradeCommand(opts, "alpha", "1.2.0", "", false, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected success, got %d: %s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Already on alpha@1.2.0") {
+		t.Fatalf("expected skip message, got %s", stdout.String())
+	}
+
+	store := snapshot.Store{Directory: snapshotDir}
+	if _, err := store.Latest("alpha"); !errors.Is(err, snapshot.ErrSnapshotNotFound) {
+		t.Fatalf("expected no snapshot, got %v", err)
+	}
+
+	if _, err := os.Stat(pluginDir); err != nil {
+		t.Fatalf("expected cache retained, got %v", err)
 	}
 }
