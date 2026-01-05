@@ -77,12 +77,13 @@ func upgradeCommand(opts CommonOptions, name string, target string, mode string,
 	updated := 0
 	skipped := 0
 	for _, targetSpec := range targets {
-		base := targetSpec.Pinned
-		if base == "" {
-			if entry, ok := installedByName[targetSpec.Name]; ok {
-				base = entry.Version
-			}
+		installedVersion := ""
+		installedLabel := "missing"
+		if entry, ok := installedByName[targetSpec.Name]; ok {
+			installedVersion = entry.Version
+			installedLabel = entry.Version
 		}
+		base := chooseBaseVersion(targetSpec.Pinned, installedVersion)
 
 		resolved := target
 		if resolved == "" {
@@ -109,15 +110,10 @@ func upgradeCommand(opts CommonOptions, name string, target string, mode string,
 			continue
 		}
 
-		installed := "missing"
-		if entry, ok := installedByName[targetSpec.Name]; ok {
-			installed = entry.Version
-		}
-
 		err := store.Save(snapshot.Entry{
 			PluginName:        targetSpec.Name,
 			PreviousSpec:      targetSpec.Declared,
-			PreviousInstalled: installed,
+			PreviousInstalled: installedLabel,
 			Source:            targetSpec.Source,
 			Reason:            "upgrade",
 			ConfigPath:        targetSpec.ConfigPath,
@@ -221,4 +217,13 @@ func filterTargets(specs []opencode.PluginSpec, source opencode.Source) []upgrad
 		})
 	}
 	return out
+}
+
+func chooseBaseVersion(pinned string, installed string) string {
+	if pinned != "" {
+		if _, ok := npm.CompareSemver(pinned, pinned); ok {
+			return pinned
+		}
+	}
+	return installed
 }

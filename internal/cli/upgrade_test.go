@@ -125,3 +125,22 @@ func TestUpgradeCommandSkipsIfUpToDate(t *testing.T) {
 		t.Fatalf("expected cache retained, got %v", err)
 	}
 }
+
+func TestChooseBaseVersion(t *testing.T) {
+	cases := []struct {
+		pinned    string
+		installed string
+		expected  string
+	}{
+		{pinned: "1.2.3", installed: "1.0.0", expected: "1.2.3"},
+		{pinned: "latest", installed: "1.0.0", expected: "1.0.0"},
+		{pinned: "", installed: "1.0.0", expected: "1.0.0"},
+		{pinned: "latest", installed: "", expected: ""},
+	}
+
+	for _, tc := range cases {
+		if got := chooseBaseVersion(tc.pinned, tc.installed); got != tc.expected {
+			t.Fatalf("pinned=%s installed=%s: expected %s, got %s", tc.pinned, tc.installed, tc.expected, got)
+		}
+	}
+}
