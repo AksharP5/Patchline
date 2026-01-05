@@ -2,4 +2,7 @@ package cache
 
 import "errors"
 
-var ErrNotImplemented = errors.New("not implemented")
+var (
+	ErrNotImplemented = errors.New("not implemented")
+	ErrUnsafePath     = errors.New("unsafe cache path")
+)
