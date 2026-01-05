@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
@@ -20,8 +21,9 @@ func listCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int {
 
 	cacheDir, candidates := cache.ResolveDir(opts.CacheDir)
 	cacheEntries := []cache.Entry{}
+	ctx := context.Background()
 	if cacheDir != "" {
-		cacheEntries, err = cache.Detect(cacheDir)
+		cacheEntries, err = cache.Detect(ctx, cacheDir)
 		if err != nil {
 			fmt.Fprintf(stderr, "failed to scan cache directory: %v\n", err)
 			return 1

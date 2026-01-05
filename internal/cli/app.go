@@ -108,9 +108,7 @@ func runSync(args []string, stdout io.Writer, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	_ = opts
-	fmt.Fprintln(stderr, "sync is not implemented yet")
-	return 1
+	return syncCommand(*opts, stdout, stderr)
 }
 
 func runUpgrade(args []string, stdout io.Writer, stderr io.Writer) int {
