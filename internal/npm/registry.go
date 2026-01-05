@@ -25,14 +25,27 @@ type registryResponse struct {
 	Versions map[string]any    `json:"versions"`
 }
 
+var defaultRegistryBaseURL = "https://registry.npmjs.org"
+var defaultHTTPClient = &http.Client{Timeout: 10 * time.Second}
+
 // FetchPackageInfo retrieves registry metadata for the given package.
 func FetchPackageInfo(ctx context.Context, name string) (PackageInfo, error) {
+	return fetchPackageInfo(ctx, defaultHTTPClient, defaultRegistryBaseURL, name)
+}
+
+func fetchPackageInfo(ctx context.Context, client *http.Client, baseURL string, name string) (PackageInfo, error) {
 	if name == "" {
 		return PackageInfo{}, fmt.Errorf("package name is required")
 	}
+	if client == nil {
+		return PackageInfo{}, fmt.Errorf("http client is required")
+	}
+	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if baseURL == "" {
+		return PackageInfo{}, fmt.Errorf("registry base url is required")
+	}
 
-	endpoint := "https://registry.npmjs.org/" + url.PathEscape(name)
-	client := &http.Client{Timeout: 10 * time.Second}
+	endpoint := baseURL + "/" + url.PathEscape(name)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return PackageInfo{}, fmt.Errorf("fetch %s: %w", name, err)
