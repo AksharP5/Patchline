@@ -158,13 +158,11 @@ func runRollback(args []string, stdout io.Writer, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	_ = opts
 	if fs.NArg() == 0 {
 		fmt.Fprintln(stderr, "missing plugin name")
 		return 2
 	}
-	fmt.Fprintln(stderr, "rollback is not implemented yet")
-	return 1
+	return rollbackCommand(*opts, fs.Arg(0), stdout, stderr)
 }
 
 func runSnapshot(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -174,9 +172,7 @@ func runSnapshot(args []string, stdout io.Writer, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	_ = opts
-	fmt.Fprintln(stderr, "snapshot is not implemented yet")
-	return 1
+	return snapshotCommand(*opts, stdout, stderr)
 }
 
 func bindCommonFlags(fs *flag.FlagSet) *CommonOptions {
