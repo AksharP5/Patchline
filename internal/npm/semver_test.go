@@ -34,3 +34,33 @@ func TestCompareSemver(t *testing.T) {
 		}
 	}
 }
+
+func TestSelectTargetVersion(t *testing.T) {
+	versions := []string{"1.2.0", "1.3.5", "2.0.0", "invalid", "1.3.1"}
+
+	latest, err := SelectTargetVersion("2.0.0", versions, "", UpgradeLatest)
+	if err != nil || latest != "2.0.0" {
+		t.Fatalf("expected latest 2.0.0, got %s (%v)", latest, err)
+	}
+
+	major, err := SelectTargetVersion("", versions, "", UpgradeMajor)
+	if err != nil || major != "2.0.0" {
+		t.Fatalf("expected major 2.0.0, got %s (%v)", major, err)
+	}
+
+	minor, err := SelectTargetVersion("", versions, "1.3.0", UpgradeMinor)
+	if err != nil || minor != "1.3.5" {
+		t.Fatalf("expected minor 1.3.5, got %s (%v)", minor, err)
+	}
+
+	patch, err := SelectTargetVersion("", versions, "1.3.0", UpgradePatch)
+	if err != nil || patch != "1.3.5" {
+		t.Fatalf("expected patch 1.3.5, got %s (%v)", patch, err)
+	}
+}
+
+func TestSelectTargetVersionMissingBase(t *testing.T) {
+	if _, err := SelectTargetVersion("", []string{"1.0.0"}, "", UpgradeMinor); err == nil {
+		t.Fatalf("expected error for missing base version")
+	}
+}
