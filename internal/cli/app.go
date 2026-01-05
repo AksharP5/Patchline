@@ -98,9 +98,7 @@ func runOutdated(args []string, stdout io.Writer, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	_ = opts
-	fmt.Fprintln(stderr, "outdated is not implemented yet")
-	return 1
+	return outdatedCommand(*opts, stdout, stderr)
 }
 
 func runSync(args []string, stdout io.Writer, stderr io.Writer) int {
