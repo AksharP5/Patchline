@@ -11,6 +11,26 @@ var Version = "dev"
 
 const toolName = "patchline"
 
+type CommonOptions struct {
+	ProjectRoot  string
+	GlobalConfig string
+	CacheDir     string
+	SnapshotDir  string
+	Offline      bool
+	LocalDirs    stringSliceFlag
+}
+
+type stringSliceFlag []string
+
+func (s *stringSliceFlag) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *stringSliceFlag) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
+
 func Run(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
 		printUsage(stderr)
@@ -63,33 +83,34 @@ func printUsage(w io.Writer) {
 
 func runList(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("list", flag.ContinueOnError)
-	bindCommonFlags(fs)
+	opts := bindCommonFlags(fs)
 	fs.SetOutput(stderr)
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	fmt.Fprintln(stderr, "list is not implemented yet")
-	return 1
+	return listCommand(*opts, stdout, stderr)
 }
 
 func runOutdated(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("outdated", flag.ContinueOnError)
-	bindCommonFlags(fs)
+	opts := bindCommonFlags(fs)
 	fs.SetOutput(stderr)
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
+	_ = opts
 	fmt.Fprintln(stderr, "outdated is not implemented yet")
 	return 1
 }
 
 func runSync(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("sync", flag.ContinueOnError)
-	bindCommonFlags(fs)
+	opts := bindCommonFlags(fs)
 	fs.SetOutput(stderr)
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
+	_ = opts
 	fmt.Fprintln(stderr, "sync is not implemented yet")
 	return 1
 }
@@ -101,7 +122,7 @@ func runUpgrade(args []string, stdout io.Writer, stderr io.Writer) int {
 	var minor bool
 	var patch bool
 	var all bool
-	bindCommonFlags(fs)
+	opts := bindCommonFlags(fs)
 	fs.StringVar(&target, "to", "", "explicit target version")
 	fs.BoolVar(&major, "major", false, "upgrade to latest major")
 	fs.BoolVar(&minor, "minor", false, "upgrade to latest minor")
@@ -111,6 +132,7 @@ func runUpgrade(args []string, stdout io.Writer, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
+	_ = opts
 
 	name := ""
 	if fs.NArg() > 0 {
@@ -135,11 +157,12 @@ func runUpgrade(args []string, stdout io.Writer, stderr io.Writer) int {
 
 func runRollback(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("rollback", flag.ContinueOnError)
-	bindCommonFlags(fs)
+	opts := bindCommonFlags(fs)
 	fs.SetOutput(stderr)
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
+	_ = opts
 	if fs.NArg() == 0 {
 		fmt.Fprintln(stderr, "missing plugin name")
 		return 2
@@ -150,21 +173,25 @@ func runRollback(args []string, stdout io.Writer, stderr io.Writer) int {
 
 func runSnapshot(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("snapshot", flag.ContinueOnError)
-	bindCommonFlags(fs)
+	opts := bindCommonFlags(fs)
 	fs.SetOutput(stderr)
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
+	_ = opts
 	fmt.Fprintln(stderr, "snapshot is not implemented yet")
 	return 1
 }
 
-func bindCommonFlags(fs *flag.FlagSet) {
-	fs.String("project", "", "project root to scan for opencode.json")
-	fs.String("global-config", "", "override global opencode.json path")
-	fs.String("cache-dir", "", "override OpenCode plugin cache directory")
-	fs.String("snapshot-dir", "", "override snapshot storage directory")
-	fs.Bool("offline", false, "disable registry network calls")
+func bindCommonFlags(fs *flag.FlagSet) *CommonOptions {
+	opts := &CommonOptions{}
+	fs.StringVar(&opts.ProjectRoot, "project", "", "project root to scan for opencode.json")
+	fs.StringVar(&opts.GlobalConfig, "global-config", "", "override global opencode.json path")
+	fs.StringVar(&opts.CacheDir, "cache-dir", "", "override OpenCode plugin cache directory")
+	fs.StringVar(&opts.SnapshotDir, "snapshot-dir", "", "override snapshot storage directory")
+	fs.BoolVar(&opts.Offline, "offline", false, "disable registry network calls")
+	fs.Var(&opts.LocalDirs, "local-dir", "additional local plugin directory (repeatable)")
+	return opts
 }
 
 func flagCount(values ...bool) int {
