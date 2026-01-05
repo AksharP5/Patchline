@@ -6,6 +6,7 @@ import (
 	"runtime"
 )
 
+// ResolveDir returns the snapshot directory and candidate paths.
 func ResolveDir(override string) (string, []string) {
 	if override != "" {
 		return override, nil
@@ -24,6 +25,7 @@ func ResolveDir(override string) (string, []string) {
 	return "", candidates
 }
 
+// CandidateDirs returns default snapshot directory candidates.
 func CandidateDirs() []string {
 	dirs := []string{}
 	if dataHome := os.Getenv("XDG_DATA_HOME"); dataHome != "" {
