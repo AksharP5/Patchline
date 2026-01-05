@@ -10,6 +10,9 @@ import (
 
 func TestOutdatedCommandOfflineNotesAndLocalPlugins(t *testing.T) {
 	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_CONFIG_HOME", root)
+	t.Setenv("XDG_DATA_HOME", root)
 	configPath := filepath.Join(root, "opencode.json")
 	config := []byte(`{"plugins":["pkg@1.0.0"]}`)
 	if err := os.WriteFile(configPath, config, 0o644); err != nil {
