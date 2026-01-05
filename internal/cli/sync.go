@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
@@ -33,6 +34,7 @@ func syncCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int {
 		return 1
 	}
 
+	ctx := context.Background()
 	cacheDir, candidates := cache.ResolveDir(opts.CacheDir)
 	if cacheDir == "" {
 		if opts.CacheDir != "" {
@@ -45,7 +47,7 @@ func syncCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int {
 		return 1
 	}
 
-	entries, err := cache.Detect(cacheDir)
+	entries, err := cache.Detect(ctx, cacheDir)
 	if err != nil {
 		fmt.Fprintf(stderr, "failed to scan cache directory: %v\n", err)
 		return 1
@@ -69,7 +71,7 @@ func syncCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int {
 	refreshed := 0
 	missing := 0
 	for _, name := range plan.RefreshTargets {
-		removed, err := cache.Invalidate(cacheDir, name)
+		removed, err := cache.Invalidate(ctx, cacheDir, name)
 		if err != nil {
 			fmt.Fprintf(stderr, "failed to refresh %s: %v\n", name, err)
 			return 1

@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -19,7 +20,11 @@ type packageJSON struct {
 	Version string `json:"version"`
 }
 
-func Detect(cacheDir string) ([]Entry, error) {
+func Detect(ctx context.Context, cacheDir string) ([]Entry, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	entries, err := os.ReadDir(cacheDir)
 	if err != nil {
 		return nil, err
@@ -27,6 +32,9 @@ func Detect(cacheDir string) ([]Entry, error) {
 
 	results := make([]Entry, 0, len(entries))
 	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return results, err
+		}
 		if !entry.IsDir() {
 			continue
 		}
@@ -56,7 +64,10 @@ func Detect(cacheDir string) ([]Entry, error) {
 }
 
 // Invalidate removes cached plugin directories that match the npm package name.
-func Invalidate(cacheDir string, pluginName string) ([]string, error) {
+func Invalidate(ctx context.Context, cacheDir string, pluginName string) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if cacheDir == "" {
 		return nil, fmt.Errorf("%w: cache directory is empty", ErrInvalidCacheDir)
 	}
@@ -71,7 +82,7 @@ func Invalidate(cacheDir string, pluginName string) ([]string, error) {
 		return nil, fmt.Errorf("plugin name is required")
 	}
 
-	entries, err := Detect(cacheDir)
+	entries, err := Detect(ctx, cacheDir)
 	if err != nil {
 		return nil, fmt.Errorf("detect cache entries: %w", err)
 	}
@@ -83,6 +94,9 @@ func Invalidate(cacheDir string, pluginName string) ([]string, error) {
 
 	removed := []string{}
 	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return removed, err
+		}
 		if entry.Name != pluginName {
 			continue
 		}

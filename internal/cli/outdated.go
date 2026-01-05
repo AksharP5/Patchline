@@ -29,10 +29,11 @@ func outdatedCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int
 		return 1
 	}
 
+	ctx := context.Background()
 	cacheDir, candidates := cache.ResolveDir(opts.CacheDir)
 	cacheEntries := []cache.Entry{}
 	if cacheDir != "" {
-		cacheEntries, err = cache.Detect(cacheDir)
+		cacheEntries, err = cache.Detect(ctx, cacheDir)
 		if err != nil {
 			fmt.Fprintf(stderr, "failed to scan cache directory: %v\n", err)
 			return 1
@@ -43,7 +44,6 @@ func outdatedCommand(opts CommonOptions, stdout io.Writer, stderr io.Writer) int
 		fmt.Fprintf(stderr, "cache directory not found. Checked: %s\n", strings.Join(candidates, ", "))
 	}
 
-	ctx := context.Background()
 	fetchErrors := map[string]error{}
 
 	installedByName := map[string]cache.Entry{}

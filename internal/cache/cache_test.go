@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,7 +15,7 @@ func TestInvalidateRemovesMatchingPlugin(t *testing.T) {
 	writePackageJSON(t, fooDir, `{"name":"foo","version":"1.0.0"}`)
 	writePackageJSON(t, barDir, `{"name":"bar","version":"2.0.0"}`)
 
-	removed, err := Invalidate(cacheDir, "foo")
+	removed, err := Invalidate(context.Background(), cacheDir, "foo")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -34,7 +35,7 @@ func TestInvalidateMissingPluginIsNoop(t *testing.T) {
 	fooDir := filepath.Join(cacheDir, "foo")
 	writePackageJSON(t, fooDir, `{"name":"foo","version":"1.0.0"}`)
 
-	removed, err := Invalidate(cacheDir, "missing")
+	removed, err := Invalidate(context.Background(), cacheDir, "missing")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -59,7 +60,7 @@ func TestEnsureWithin(t *testing.T) {
 }
 
 func TestInvalidateEmptyCacheDir(t *testing.T) {
-	if _, err := Invalidate("", "foo"); err == nil {
+	if _, err := Invalidate(context.Background(), "", "foo"); err == nil {
 		t.Fatalf("expected error for empty cache dir")
 	}
 }
