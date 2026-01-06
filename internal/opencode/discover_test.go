@@ -131,7 +131,7 @@ func TestDefaultLocalPluginDirs(t *testing.T) {
 	configHome := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", configHome)
 
-	dirs := defaultLocalPluginDirs(root, "")
+	dirs := defaultLocalPluginDirs(root)
 	wantGlobal := filepath.Join(configHome, "opencode", "plugin")
 	wantProject := filepath.Join(root, ".opencode", "plugin")
 
@@ -147,22 +147,5 @@ func TestDefaultLocalPluginDirs(t *testing.T) {
 	}
 	if !foundGlobal || !foundProject {
 		t.Fatalf("expected plugin dirs, got %#v", dirs)
-	}
-}
-
-func TestDefaultLocalPluginDirsUsesGlobalConfigDir(t *testing.T) {
-	root := t.TempDir()
-	configPath := filepath.Join(root, "custom", "opencode.json")
-	dirs := defaultLocalPluginDirs("", configPath)
-	want := filepath.Join(filepath.Dir(configPath), "plugin")
-	found := false
-	for _, dir := range dirs {
-		if dir == want {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected plugin dir %s, got %#v", want, dirs)
 	}
 }

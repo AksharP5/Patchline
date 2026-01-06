@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -47,7 +46,7 @@ func Discover(projectRoot string, globalConfigPath string, localDirs []string) (
 	}
 
 	localCandidates := append([]string{}, localDirs...)
-	localCandidates = append(localCandidates, defaultLocalPluginDirs(projectRoot, globalPath)...)
+	localCandidates = append(localCandidates, defaultLocalPluginDirs(projectRoot)...)
 	result.Plugins = append(result.Plugins, discoverLocalPlugins(localCandidates)...)
 
 	return result, nil
@@ -153,29 +152,22 @@ func resolveGlobalConfig(override string) (string, error) {
 
 func globalConfigCandidates() []string {
 	paths := []string{}
-	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
-		paths = append(paths, filepath.Join(configHome, "opencode", "opencode.json"))
-	}
-
-	home, err := os.UserHomeDir()
-	if err == nil && home != "" {
-		baseDir := filepath.Join(home, ".config", "opencode")
-		paths = append(paths, filepath.Join(baseDir, "opencode.json"))
-		if runtime.GOOS == "darwin" {
-			paths = append(paths, filepath.Join(home, "Library", "Application Support", "opencode", "opencode.json"))
+	configHome := os.Getenv("XDG_CONFIG_HOME")
+	if configHome == "" {
+		home, err := os.UserHomeDir()
+		if err == nil && home != "" {
+			configHome = filepath.Join(home, ".config")
 		}
-		paths = append(paths, filepath.Join(home, ".opencode", "opencode.json"))
+	}
+	if configHome != "" {
+		paths = append(paths, filepath.Join(configHome, "opencode", "opencode.json"))
 	}
 
 	return uniqueStrings(paths)
 }
 
-func defaultLocalPluginDirs(projectRoot string, globalConfigPath string) []string {
+func defaultLocalPluginDirs(projectRoot string) []string {
 	paths := []string{}
-	if globalConfigPath != "" {
-		paths = append(paths, filepath.Join(filepath.Dir(globalConfigPath), "plugin"))
-	}
-
 	configHome := os.Getenv("XDG_CONFIG_HOME")
 	if configHome == "" {
 		home, err := os.UserHomeDir()
