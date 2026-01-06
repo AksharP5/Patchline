@@ -58,6 +58,9 @@ func TestSnapshotUpgradeRollbackFlow(t *testing.T) {
 	if !strings.Contains(string(updated), "alpha@1.1.0") {
 		t.Fatalf("expected upgrade config, got %s", string(updated))
 	}
+	if strings.Contains(string(updated), "alpha@1.0.0") {
+		t.Fatalf("expected old spec removed, got %s", string(updated))
+	}
 	if _, err := os.Stat(pluginDir); !os.IsNotExist(err) {
 		t.Fatalf("expected cache invalidation, got %v", err)
 	}
@@ -76,6 +79,9 @@ func TestSnapshotUpgradeRollbackFlow(t *testing.T) {
 	}
 	if !strings.Contains(string(restored), "alpha@1.0.0") {
 		t.Fatalf("expected rollback config, got %s", string(restored))
+	}
+	if strings.Contains(string(restored), "alpha@1.1.0") {
+		t.Fatalf("expected upgraded spec removed, got %s", string(restored))
 	}
 	if _, err := os.Stat(pluginDir); !os.IsNotExist(err) {
 		t.Fatalf("expected cache invalidation after rollback, got %v", err)
