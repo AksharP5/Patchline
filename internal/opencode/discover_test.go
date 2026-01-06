@@ -78,6 +78,7 @@ func TestDiscoverLocalPluginsFiltersExtensions(t *testing.T) {
 		"skip.txt":    "skip",
 		"another.cjs": "module.exports = {}",
 		"last.mjs":    "export default {}",
+		"typed.ts":    "export default {}",
 	}
 	for name, content := range files {
 		path := filepath.Join(root, name)
@@ -87,15 +88,15 @@ func TestDiscoverLocalPluginsFiltersExtensions(t *testing.T) {
 	}
 
 	plugins := discoverLocalPlugins([]string{root})
-	if len(plugins) != 3 {
-		t.Fatalf("expected 3 local plugins, got %d", len(plugins))
+	if len(plugins) != 4 {
+		t.Fatalf("expected 4 local plugins, got %d", len(plugins))
 	}
 
 	seen := map[string]bool{}
 	for _, plugin := range plugins {
 		seen[plugin.Name] = true
 	}
-	if !seen["local"] || !seen["another"] || !seen["last"] {
+	if !seen["local"] || !seen["another"] || !seen["last"] || !seen["typed"] {
 		t.Fatalf("unexpected local plugin names: %#v", seen)
 	}
 }
@@ -122,5 +123,29 @@ func TestGlobalConfigCandidatesIncludeXDG(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected candidate %s, got %#v", want, candidates)
+	}
+}
+
+func TestDefaultLocalPluginDirs(t *testing.T) {
+	root := t.TempDir()
+	configHome := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+
+	dirs := defaultLocalPluginDirs(root)
+	wantGlobal := filepath.Join(configHome, "opencode", "plugin")
+	wantProject := filepath.Join(root, ".opencode", "plugin")
+
+	foundGlobal := false
+	foundProject := false
+	for _, dir := range dirs {
+		if dir == wantGlobal {
+			foundGlobal = true
+		}
+		if dir == wantProject {
+			foundProject = true
+		}
+	}
+	if !foundGlobal || !foundProject {
+		t.Fatalf("expected plugin dirs, got %#v", dirs)
 	}
 }

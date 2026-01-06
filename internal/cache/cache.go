@@ -38,29 +38,65 @@ func Detect(ctx context.Context, cacheDir string) ([]Entry, error) {
 		if !entry.IsDir() {
 			continue
 		}
-
-		packagePath := filepath.Join(cacheDir, entry.Name(), "package.json")
-		data, err := os.ReadFile(packagePath)
-		if err != nil {
+		if entry.Name() == ".bin" {
 			continue
 		}
 
-		var pkg packageJSON
-		if err := json.Unmarshal(data, &pkg); err != nil {
-			continue
-		}
-		if pkg.Name == "" || pkg.Version == "" {
+		entryPath := filepath.Join(cacheDir, entry.Name())
+		if strings.HasPrefix(entry.Name(), "@") {
+			scopedEntries, err := os.ReadDir(entryPath)
+			if err != nil {
+				continue
+			}
+			for _, scoped := range scopedEntries {
+				if err := ctx.Err(); err != nil {
+					return results, err
+				}
+				if !scoped.IsDir() {
+					continue
+				}
+				pkg, ok := readPackageJSON(filepath.Join(entryPath, scoped.Name()))
+				if !ok {
+					continue
+				}
+				results = append(results, Entry{
+					Name:    pkg.Name,
+					Version: pkg.Version,
+					Path:    filepath.Join(entryPath, scoped.Name()),
+				})
+			}
 			continue
 		}
 
+		pkg, ok := readPackageJSON(entryPath)
+		if !ok {
+			continue
+		}
 		results = append(results, Entry{
 			Name:    pkg.Name,
 			Version: pkg.Version,
-			Path:    filepath.Join(cacheDir, entry.Name()),
+			Path:    entryPath,
 		})
 	}
 
 	return results, nil
+}
+
+func readPackageJSON(dir string) (packageJSON, bool) {
+	packagePath := filepath.Join(dir, "package.json")
+	data, err := os.ReadFile(packagePath)
+	if err != nil {
+		return packageJSON{}, false
+	}
+
+	var pkg packageJSON
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return packageJSON{}, false
+	}
+	if pkg.Name == "" || pkg.Version == "" {
+		return packageJSON{}, false
+	}
+	return pkg, true
 }
 
 // Invalidate removes cached plugin directories that match the npm package name.
