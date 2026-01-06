@@ -3,7 +3,6 @@ package cache
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
 func ResolveDir(override string) (string, []string) {
@@ -24,26 +23,12 @@ func ResolveDir(override string) (string, []string) {
 func CandidateDirs() []string {
 	dirs := []string{}
 	if cacheHome := os.Getenv("XDG_CACHE_HOME"); cacheHome != "" {
-		dirs = append(dirs,
-			filepath.Join(cacheHome, "opencode", "plugins"),
-			filepath.Join(cacheHome, "opencode"),
-		)
+		dirs = append(dirs, filepath.Join(cacheHome, "opencode", "node_modules"))
 	}
 
 	home, err := os.UserHomeDir()
 	if err == nil && home != "" {
-		switch runtime.GOOS {
-		case "darwin":
-			dirs = append(dirs,
-				filepath.Join(home, "Library", "Caches", "opencode", "plugins"),
-				filepath.Join(home, "Library", "Caches", "opencode"),
-			)
-		default:
-			dirs = append(dirs,
-				filepath.Join(home, ".cache", "opencode", "plugins"),
-				filepath.Join(home, ".cache", "opencode"),
-			)
-		}
+		dirs = append(dirs, filepath.Join(home, ".cache", "opencode", "node_modules"))
 	}
 
 	return uniqueStrings(dirs)

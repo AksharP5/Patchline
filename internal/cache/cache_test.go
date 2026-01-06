@@ -65,6 +65,31 @@ func TestInvalidateEmptyCacheDir(t *testing.T) {
 	}
 }
 
+func TestDetectSupportsScopedPackages(t *testing.T) {
+	cacheDir := t.TempDir()
+	writePackageJSON(t, filepath.Join(cacheDir, "alpha"), `{"name":"alpha","version":"1.0.0"}`)
+	writePackageJSON(t, filepath.Join(cacheDir, "@scope", "beta"), `{"name":"@scope/beta","version":"2.0.0"}`)
+	if err := os.MkdirAll(filepath.Join(cacheDir, ".bin"), 0o755); err != nil {
+		t.Fatalf("mkdir .bin: %v", err)
+	}
+
+	entries, err := Detect(context.Background(), cacheDir)
+	if err != nil {
+		t.Fatalf("detect: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+
+	seen := map[string]bool{}
+	for _, entry := range entries {
+		seen[entry.Name] = true
+	}
+	if !seen["alpha"] || !seen["@scope/beta"] {
+		t.Fatalf("unexpected entries: %#v", seen)
+	}
+}
+
 func writePackageJSON(t *testing.T, dir string, content string) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {

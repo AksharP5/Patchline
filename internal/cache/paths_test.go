@@ -21,7 +21,7 @@ func TestCandidateDirsIncludeXDGCache(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", root)
 
 	candidates := CandidateDirs()
-	want := filepath.Join(root, "opencode", "plugins")
+	want := filepath.Join(root, "opencode", "node_modules")
 	found := false
 	for _, candidate := range candidates {
 		if candidate == want {
