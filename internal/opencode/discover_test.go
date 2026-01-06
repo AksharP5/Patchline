@@ -178,3 +178,31 @@ func TestGlobalConfigCandidatesIncludeXDG(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveGlobalConfigPrefersNonDotfile(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", root)
+
+	configDir := filepath.Join(root, "opencode")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	dotPath := filepath.Join(configDir, ".opencode.json")
+	if err := os.WriteFile(dotPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write dot config: %v", err)
+	}
+
+	configPath := filepath.Join(configDir, "opencode.json")
+	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	found, err := resolveGlobalConfig("")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if found != configPath {
+		t.Fatalf("expected %s, got %s", configPath, found)
+	}
+}
