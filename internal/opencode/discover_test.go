@@ -27,60 +27,9 @@ func TestFindProjectConfigWalksParents(t *testing.T) {
 	}
 }
 
-func TestFindProjectConfigPrefersNonDotfile(t *testing.T) {
-	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, ".opencode.json"), []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-	configPath := filepath.Join(root, "opencode.json")
-	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	found, err := findProjectConfig(root)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if found != configPath {
-		t.Fatalf("expected %s, got %s", configPath, found)
-	}
-}
-
-func TestFindProjectConfigFindsDotfile(t *testing.T) {
-	root := t.TempDir()
-	configPath := filepath.Join(root, ".opencode.json")
-	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	found, err := findProjectConfig(root)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if found != configPath {
-		t.Fatalf("expected %s, got %s", configPath, found)
-	}
-}
-
 func TestFindProjectConfigExplicitFile(t *testing.T) {
 	root := t.TempDir()
 	configPath := filepath.Join(root, "opencode.json")
-	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	found, err := findProjectConfig(configPath)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if found != configPath {
-		t.Fatalf("expected %s, got %s", configPath, found)
-	}
-}
-
-func TestFindProjectConfigExplicitDotfile(t *testing.T) {
-	root := t.TempDir()
-	configPath := filepath.Join(root, ".opencode.json")
 	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -129,6 +78,7 @@ func TestDiscoverLocalPluginsFiltersExtensions(t *testing.T) {
 		"skip.txt":    "skip",
 		"another.cjs": "module.exports = {}",
 		"last.mjs":    "export default {}",
+		"typed.ts":    "export default {}",
 	}
 	for name, content := range files {
 		path := filepath.Join(root, name)
@@ -138,15 +88,15 @@ func TestDiscoverLocalPluginsFiltersExtensions(t *testing.T) {
 	}
 
 	plugins := discoverLocalPlugins([]string{root})
-	if len(plugins) != 3 {
-		t.Fatalf("expected 3 local plugins, got %d", len(plugins))
+	if len(plugins) != 4 {
+		t.Fatalf("expected 4 local plugins, got %d", len(plugins))
 	}
 
 	seen := map[string]bool{}
 	for _, plugin := range plugins {
 		seen[plugin.Name] = true
 	}
-	if !seen["local"] || !seen["another"] || !seen["last"] {
+	if !seen["local"] || !seen["another"] || !seen["last"] || !seen["typed"] {
 		t.Fatalf("unexpected local plugin names: %#v", seen)
 	}
 }
@@ -163,46 +113,39 @@ func TestGlobalConfigCandidatesIncludeXDG(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", root)
 
 	candidates := globalConfigCandidates()
-	wantFiles := []string{"opencode.json", ".opencode.json"}
-	for _, filename := range wantFiles {
-		want := filepath.Join(root, "opencode", filename)
-		found := false
-		for _, candidate := range candidates {
-			if candidate == want {
-				found = true
-				break
-			}
+	want := filepath.Join(root, "opencode", "opencode.json")
+	found := false
+	for _, candidate := range candidates {
+		if candidate == want {
+			found = true
+			break
 		}
-		if !found {
-			t.Fatalf("expected candidate %s, got %#v", want, candidates)
-		}
+	}
+	if !found {
+		t.Fatalf("expected candidate %s, got %#v", want, candidates)
 	}
 }
 
-func TestResolveGlobalConfigPrefersNonDotfile(t *testing.T) {
+func TestDefaultLocalPluginDirs(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", root)
+	configHome := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", configHome)
 
-	configDir := filepath.Join(root, "opencode")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
+	dirs := defaultLocalPluginDirs(root)
+	wantGlobal := filepath.Join(configHome, "opencode", "plugin")
+	wantProject := filepath.Join(root, ".opencode", "plugin")
 
-	dotPath := filepath.Join(configDir, ".opencode.json")
-	if err := os.WriteFile(dotPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
-		t.Fatalf("write dot config: %v", err)
+	foundGlobal := false
+	foundProject := false
+	for _, dir := range dirs {
+		if dir == wantGlobal {
+			foundGlobal = true
+		}
+		if dir == wantProject {
+			foundProject = true
+		}
 	}
-
-	configPath := filepath.Join(configDir, "opencode.json")
-	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	found, err := resolveGlobalConfig("")
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if found != configPath {
-		t.Fatalf("expected %s, got %s", configPath, found)
+	if !foundGlobal || !foundProject {
+		t.Fatalf("expected plugin dirs, got %#v", dirs)
 	}
 }

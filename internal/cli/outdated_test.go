@@ -19,7 +19,7 @@ func TestOutdatedCommandOfflineNotesAndLocalPlugins(t *testing.T) {
 		t.Fatalf("write config: %v", err)
 	}
 
-	localDir := filepath.Join(root, ".opencode", "plugins")
+	localDir := filepath.Join(root, ".opencode", "plugin")
 	if err := os.MkdirAll(localDir, 0o755); err != nil {
 		t.Fatalf("mkdir local plugins: %v", err)
 	}
