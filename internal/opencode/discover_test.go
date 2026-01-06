@@ -27,9 +27,60 @@ func TestFindProjectConfigWalksParents(t *testing.T) {
 	}
 }
 
+func TestFindProjectConfigPrefersNonDotfile(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".opencode.json"), []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	configPath := filepath.Join(root, "opencode.json")
+	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	found, err := findProjectConfig(root)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if found != configPath {
+		t.Fatalf("expected %s, got %s", configPath, found)
+	}
+}
+
+func TestFindProjectConfigFindsDotfile(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, ".opencode.json")
+	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	found, err := findProjectConfig(root)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if found != configPath {
+		t.Fatalf("expected %s, got %s", configPath, found)
+	}
+}
+
 func TestFindProjectConfigExplicitFile(t *testing.T) {
 	root := t.TempDir()
 	configPath := filepath.Join(root, "opencode.json")
+	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	found, err := findProjectConfig(configPath)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if found != configPath {
+		t.Fatalf("expected %s, got %s", configPath, found)
+	}
+}
+
+func TestFindProjectConfigExplicitDotfile(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, ".opencode.json")
 	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
@@ -112,15 +163,18 @@ func TestGlobalConfigCandidatesIncludeXDG(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", root)
 
 	candidates := globalConfigCandidates()
-	want := filepath.Join(root, "opencode", "opencode.json")
-	found := false
-	for _, candidate := range candidates {
-		if candidate == want {
-			found = true
-			break
+	wantFiles := []string{"opencode.json", ".opencode.json"}
+	for _, filename := range wantFiles {
+		want := filepath.Join(root, "opencode", filename)
+		found := false
+		for _, candidate := range candidates {
+			if candidate == want {
+				found = true
+				break
+			}
 		}
-	}
-	if !found {
-		t.Fatalf("expected candidate %s, got %#v", want, candidates)
+		if !found {
+			t.Fatalf("expected candidate %s, got %#v", want, candidates)
+		}
 	}
 }

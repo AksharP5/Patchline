@@ -16,6 +16,8 @@ var localPluginExtensions = map[string]bool{
 	".mjs": true,
 }
 
+var configFilenames = []string{"opencode.json", ".opencode.json"}
+
 func Discover(projectRoot string, globalConfigPath string, localDirs []string) (DiscoveryResult, error) {
 	result := DiscoveryResult{}
 
@@ -112,7 +114,7 @@ func findProjectConfig(projectRoot string) (string, error) {
 
 	info, err := os.Stat(root)
 	if err == nil && !info.IsDir() {
-		if filepath.Base(root) == "opencode.json" {
+		if isConfigFilename(filepath.Base(root)) {
 			return root, nil
 		}
 		return "", fmt.Errorf("project path is not a directory: %s", root)
@@ -120,9 +122,11 @@ func findProjectConfig(projectRoot string) (string, error) {
 
 	root = filepath.Clean(root)
 	for {
-		candidate := filepath.Join(root, "opencode.json")
-		if fileExists(candidate) {
-			return candidate, nil
+		for _, name := range configFilenames {
+			candidate := filepath.Join(root, name)
+			if fileExists(candidate) {
+				return candidate, nil
+			}
 		}
 		parent := filepath.Dir(root)
 		if parent == root {
@@ -151,18 +155,26 @@ func resolveGlobalConfig(override string) (string, error) {
 func globalConfigCandidates() []string {
 	paths := []string{}
 	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
-		paths = append(paths, filepath.Join(configHome, "opencode", "opencode.json"))
+		for _, name := range configFilenames {
+			paths = append(paths, filepath.Join(configHome, "opencode", name))
+		}
 	}
 
 	home, err := os.UserHomeDir()
 	if err == nil && home != "" {
+		var baseDirs []string
 		switch runtime.GOOS {
 		case "darwin":
-			paths = append(paths, filepath.Join(home, "Library", "Application Support", "opencode", "opencode.json"))
+			baseDirs = append(baseDirs, filepath.Join(home, "Library", "Application Support", "opencode"))
 		default:
-			paths = append(paths, filepath.Join(home, ".config", "opencode", "opencode.json"))
+			baseDirs = append(baseDirs, filepath.Join(home, ".config", "opencode"))
 		}
-		paths = append(paths, filepath.Join(home, ".opencode", "opencode.json"))
+		baseDirs = append(baseDirs, filepath.Join(home, ".opencode"))
+		for _, base := range baseDirs {
+			for _, name := range configFilenames {
+				paths = append(paths, filepath.Join(base, name))
+			}
+		}
 	}
 
 	return uniqueStrings(paths)
@@ -229,6 +241,15 @@ func discoverLocalPlugins(dirs []string) []PluginSpec {
 	}
 
 	return plugins
+}
+
+func isConfigFilename(name string) bool {
+	for _, candidate := range configFilenames {
+		if name == candidate {
+			return true
+		}
+	}
+	return false
 }
 
 func fileExists(path string) bool {
