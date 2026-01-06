@@ -3,7 +3,6 @@ package cache
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
 func ResolveDir(override string) (string, []string) {
@@ -30,9 +29,6 @@ func CandidateDirs() []string {
 	home, err := os.UserHomeDir()
 	if err == nil && home != "" {
 		dirs = append(dirs, filepath.Join(home, ".cache", "opencode", "node_modules"))
-		if runtime.GOOS == "darwin" {
-			dirs = append(dirs, filepath.Join(home, "Library", "Caches", "opencode", "node_modules"))
-		}
 	}
 
 	return uniqueStrings(dirs)
