@@ -27,6 +27,22 @@ func TestSelectUpgradeTargetsPreferProject(t *testing.T) {
 	}
 }
 
+func TestSelectUpgradeTargetsPreferCustom(t *testing.T) {
+	specs := []opencode.PluginSpec{
+		{Name: "alpha", ConfigPath: "/project/opencode.json", Source: opencode.SourceProject},
+		{Name: "alpha", ConfigPath: "/custom/opencode.json", Source: opencode.SourceCustom},
+		{Name: "alpha", ConfigPath: "/custom-dir/opencode.json", Source: opencode.SourceCustomDir},
+	}
+
+	targets := selectUpgradeTargets(specs, "alpha", false)
+	if len(targets) != 1 {
+		t.Fatalf("expected one target, got %d", len(targets))
+	}
+	if targets[0].ConfigPath != "/custom/opencode.json" {
+		t.Fatalf("expected custom config, got %s", targets[0].ConfigPath)
+	}
+}
+
 func TestSelectUpgradeTargetsAll(t *testing.T) {
 	specs := []opencode.PluginSpec{
 		{Name: "alpha", ConfigPath: "/project/opencode.json", Source: opencode.SourceProject},

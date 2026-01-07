@@ -187,11 +187,19 @@ func selectPreferredTargets(specs []opencode.PluginSpec) []upgradeTarget {
 		return nil
 	}
 
-	project := filterTargets(specs, opencode.SourceProject)
-	if len(project) > 0 {
-		return project
+	order := []opencode.Source{
+		opencode.SourceCustom,
+		opencode.SourceCustomDir,
+		opencode.SourceProject,
+		opencode.SourceGlobal,
 	}
-	return filterTargets(specs, opencode.SourceGlobal)
+	for _, source := range order {
+		filtered := filterTargets(specs, source)
+		if len(filtered) > 0 {
+			return filtered
+		}
+	}
+	return nil
 }
 
 func filterTargets(specs []opencode.PluginSpec, source opencode.Source) []upgradeTarget {

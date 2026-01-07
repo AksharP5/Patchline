@@ -3,9 +3,11 @@ package opencode
 type Source string
 
 const (
-	SourceProject Source = "project"
-	SourceGlobal  Source = "global"
-	SourceLocal   Source = "local"
+	SourceProject   Source = "project"
+	SourceGlobal    Source = "global"
+	SourceLocal     Source = "local"
+	SourceCustomDir Source = "custom-dir"
+	SourceCustom    Source = "custom"
 )
 
 type Config struct {

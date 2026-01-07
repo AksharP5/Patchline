@@ -21,18 +21,6 @@ var localPluginExtensions = map[string]bool{
 func Discover(projectRoot string, globalConfigPath string, localDirs []string) (DiscoveryResult, error) {
 	result := DiscoveryResult{}
 
-	projectPath, err := findProjectConfig(projectRoot)
-	if err != nil && !errors.Is(err, ErrConfigNotFound) {
-		return result, err
-	}
-	if projectPath != "" {
-		plugins, err := loadPluginSpecs(projectPath, SourceProject)
-		if err != nil {
-			return result, err
-		}
-		result.Plugins = append(result.Plugins, plugins...)
-	}
-
 	globalPath, err := resolveGlobalConfig(globalConfigPath)
 	if err != nil && !errors.Is(err, ErrConfigNotFound) {
 		return result, err
@@ -45,8 +33,47 @@ func Discover(projectRoot string, globalConfigPath string, localDirs []string) (
 		result.Plugins = append(result.Plugins, plugins...)
 	}
 
+	projectPath, err := findProjectConfig(projectRoot)
+	if err != nil && !errors.Is(err, ErrConfigNotFound) {
+		return result, err
+	}
+	if projectPath != "" {
+		plugins, err := loadPluginSpecs(projectPath, SourceProject)
+		if err != nil {
+			return result, err
+		}
+		result.Plugins = append(result.Plugins, plugins...)
+	}
+
+	customConfigDir, err := resolveCustomConfigDir()
+	if err != nil {
+		return result, err
+	}
+	if customConfigDir != "" {
+		customConfigPath := filepath.Join(customConfigDir, "opencode.json")
+		if fileExists(customConfigPath) {
+			plugins, err := loadPluginSpecs(customConfigPath, SourceCustomDir)
+			if err != nil {
+				return result, err
+			}
+			result.Plugins = append(result.Plugins, plugins...)
+		}
+	}
+
+	customConfigPath, err := resolveCustomConfigFile()
+	if err != nil {
+		return result, err
+	}
+	if customConfigPath != "" {
+		plugins, err := loadPluginSpecs(customConfigPath, SourceCustom)
+		if err != nil {
+			return result, err
+		}
+		result.Plugins = append(result.Plugins, plugins...)
+	}
+
 	localCandidates := append([]string{}, localDirs...)
-	localCandidates = append(localCandidates, defaultLocalPluginDirs(projectRoot)...)
+	localCandidates = append(localCandidates, defaultLocalPluginDirs(projectRoot, customConfigDir)...)
 	result.Plugins = append(result.Plugins, discoverLocalPlugins(localCandidates)...)
 
 	return result, nil
@@ -59,7 +86,7 @@ func loadPluginSpecs(path string, source Source) ([]PluginSpec, error) {
 	}
 
 	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	if err := json.Unmarshal(sanitizeJSONC(data), &cfg); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 
@@ -166,7 +193,7 @@ func globalConfigCandidates() []string {
 	return uniqueStrings(paths)
 }
 
-func defaultLocalPluginDirs(projectRoot string) []string {
+func defaultLocalPluginDirs(projectRoot string, customConfigDir string) []string {
 	paths := []string{}
 	configHome := os.Getenv("XDG_CONFIG_HOME")
 	if configHome == "" {
@@ -181,6 +208,10 @@ func defaultLocalPluginDirs(projectRoot string) []string {
 
 	if projectRoot != "" {
 		paths = append(paths, filepath.Join(projectRoot, ".opencode", "plugin"))
+	}
+
+	if customConfigDir != "" {
+		paths = append(paths, filepath.Join(customConfigDir, "plugin"))
 	}
 
 	return uniqueStrings(paths)
@@ -217,6 +248,42 @@ func discoverLocalPlugins(dirs []string) []PluginSpec {
 	}
 
 	return plugins
+}
+
+func resolveCustomConfigFile() (string, error) {
+	configPath := strings.TrimSpace(os.Getenv("OPENCODE_CONFIG"))
+	if configPath == "" {
+		return "", nil
+	}
+	info, err := os.Stat(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configPath)
+		}
+		return "", fmt.Errorf("stat %s: %w", configPath, err)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configPath)
+	}
+	return configPath, nil
+}
+
+func resolveCustomConfigDir() (string, error) {
+	configDir := strings.TrimSpace(os.Getenv("OPENCODE_CONFIG_DIR"))
+	if configDir == "" {
+		return "", nil
+	}
+	info, err := os.Stat(configDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configDir)
+		}
+		return "", fmt.Errorf("stat %s: %w", configDir, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configDir)
+	}
+	return configDir, nil
 }
 
 func fileExists(path string) bool {
