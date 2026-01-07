@@ -64,9 +64,9 @@ func TestUpdatePluginSpecJSONC(t *testing.T) {
 	path := filepath.Join(root, "opencode.json")
 	data := `// top-level comment
 {
-  "plugin": ["delta@1.0.0"], // inline comment
+  "plugin": ["delta@1.0.0",], // inline comment
   /* block comment */
-  "other": "value"
+  "other": "value",
 }
 `
 	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {

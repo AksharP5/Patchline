@@ -86,7 +86,7 @@ func loadPluginSpecs(path string, source Source) ([]PluginSpec, error) {
 	}
 
 	var cfg Config
-	if err := json.Unmarshal(stripJSONC(data), &cfg); err != nil {
+	if err := json.Unmarshal(sanitizeJSONC(data), &cfg); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 
@@ -255,10 +255,17 @@ func resolveCustomConfigFile() (string, error) {
 	if configPath == "" {
 		return "", nil
 	}
-	if fileExists(configPath) {
-		return configPath, nil
+	info, err := os.Stat(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configPath)
+		}
+		return "", fmt.Errorf("stat %s: %w", configPath, err)
 	}
-	return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configPath)
+	if info.IsDir() {
+		return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configPath)
+	}
+	return configPath, nil
 }
 
 func resolveCustomConfigDir() (string, error) {
@@ -268,7 +275,10 @@ func resolveCustomConfigDir() (string, error) {
 	}
 	info, err := os.Stat(configDir)
 	if err != nil {
-		return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configDir)
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configDir)
+		}
+		return "", fmt.Errorf("stat %s: %w", configDir, err)
 	}
 	if !info.IsDir() {
 		return "", fmt.Errorf("%w: %s", ErrConfigNotFound, configDir)

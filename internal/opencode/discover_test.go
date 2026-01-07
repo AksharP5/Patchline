@@ -76,8 +76,8 @@ func TestLoadPluginSpecsJSONC(t *testing.T) {
 	configPath := filepath.Join(root, "opencode.json")
 	content := []byte(`// comment
 {
-  "plugin": ["alpha@1.0.0"], /* inline */
-  "plugins": ["beta@2.0.0"]
+  "plugin": ["alpha@1.0.0",], /* inline */
+  "plugins": ["beta@2.0.0"],
 }
 `)
 	if err := os.WriteFile(configPath, content, 0o644); err != nil {

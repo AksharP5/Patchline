@@ -24,7 +24,7 @@ func UpdatePluginSpec(path string, pluginName string, newSpec string) error {
 	}
 
 	var raw map[string]any
-	if err := json.Unmarshal(stripJSONC(data), &raw); err != nil {
+	if err := json.Unmarshal(sanitizeJSONC(data), &raw); err != nil {
 		return fmt.Errorf("parse %s: %w", path, err)
 	}
 
