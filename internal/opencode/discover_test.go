@@ -71,6 +71,28 @@ func TestLoadPluginSpecsSupportsBothKeys(t *testing.T) {
 	}
 }
 
+func TestLoadPluginSpecsJSONC(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, "opencode.json")
+	content := []byte(`// comment
+{
+  "plugin": ["alpha@1.0.0"], /* inline */
+  "plugins": ["beta@2.0.0"]
+}
+`)
+	if err := os.WriteFile(configPath, content, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	plugins, err := loadPluginSpecs(configPath, SourceProject)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(plugins) != 2 {
+		t.Fatalf("expected 2 plugins, got %d", len(plugins))
+	}
+}
+
 func TestDiscoverLocalPluginsFiltersExtensions(t *testing.T) {
 	root := t.TempDir()
 	files := map[string]string{
@@ -131,7 +153,7 @@ func TestDefaultLocalPluginDirs(t *testing.T) {
 	configHome := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", configHome)
 
-	dirs := defaultLocalPluginDirs(root)
+	dirs := defaultLocalPluginDirs(root, "")
 	wantGlobal := filepath.Join(configHome, "opencode", "plugin")
 	wantProject := filepath.Join(root, ".opencode", "plugin")
 
@@ -147,5 +169,76 @@ func TestDefaultLocalPluginDirs(t *testing.T) {
 	}
 	if !foundGlobal || !foundProject {
 		t.Fatalf("expected plugin dirs, got %#v", dirs)
+	}
+}
+
+func TestDiscoverUsesCustomConfigFile(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, "opencode.json")
+	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	customPath := filepath.Join(root, "custom.json")
+	if err := os.WriteFile(customPath, []byte(`{"plugins":["foo@2.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write custom config: %v", err)
+	}
+	t.Setenv("OPENCODE_CONFIG", customPath)
+
+	result, err := Discover(root, "", nil)
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	foundCustom := false
+	for _, plugin := range result.Plugins {
+		if plugin.Name == "foo" && plugin.Source == SourceCustom && plugin.Pinned == "2.0.0" {
+			foundCustom = true
+			break
+		}
+	}
+	if !foundCustom {
+		t.Fatalf("expected custom config plugin override")
+	}
+}
+
+func TestDiscoverUsesCustomConfigDir(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, "opencode.json")
+	if err := os.WriteFile(configPath, []byte(`{"plugins":["foo@1.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	customDir := filepath.Join(root, "custom")
+	if err := os.MkdirAll(filepath.Join(customDir, "plugin"), 0o755); err != nil {
+		t.Fatalf("mkdir custom plugin dir: %v", err)
+	}
+	customConfig := filepath.Join(customDir, "opencode.json")
+	if err := os.WriteFile(customConfig, []byte(`{"plugins":["bar@2.0.0"]}`), 0o644); err != nil {
+		t.Fatalf("write custom config: %v", err)
+	}
+	localPlugin := filepath.Join(customDir, "plugin", "local.js")
+	if err := os.WriteFile(localPlugin, []byte("export default {}"), 0o644); err != nil {
+		t.Fatalf("write local plugin: %v", err)
+	}
+	t.Setenv("OPENCODE_CONFIG_DIR", customDir)
+
+	result, err := Discover(root, "", nil)
+	if err != nil {
+		t.Fatalf("discover: %v", err)
+	}
+
+	foundCustom := false
+	foundLocal := false
+	for _, plugin := range result.Plugins {
+		if plugin.Name == "bar" && plugin.Source == SourceCustomDir {
+			foundCustom = true
+		}
+		if plugin.Name == "local" && plugin.Source == SourceLocal {
+			foundLocal = true
+		}
+	}
+	if !foundCustom || !foundLocal {
+		t.Fatalf("expected custom config dir and local plugin")
 	}
 }

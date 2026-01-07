@@ -59,6 +59,33 @@ func TestUpdatePluginSpecPluginsKey(t *testing.T) {
 	}
 }
 
+func TestUpdatePluginSpecJSONC(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "opencode.json")
+	data := `// top-level comment
+{
+  "plugin": ["delta@1.0.0"], // inline comment
+  /* block comment */
+  "other": "value"
+}
+`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	if err := UpdatePluginSpec(path, "delta", "delta@1.1.0"); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	updated, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if !strings.Contains(string(updated), "delta@1.1.0") {
+		t.Fatalf("expected updated spec")
+	}
+}
+
 func TestUpdatePluginSpecNotFound(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "opencode.json")
