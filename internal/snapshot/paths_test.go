@@ -3,8 +3,19 @@ package snapshot
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func setHomeEnv(t *testing.T, home string) {
+	t.Helper()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	if volume := filepath.VolumeName(home); volume != "" {
+		t.Setenv("HOMEDRIVE", volume)
+		t.Setenv("HOMEPATH", strings.TrimPrefix(home, volume))
+	}
+}
 
 func TestResolveDirUsesOverride(t *testing.T) {
 	override := t.TempDir()
@@ -38,7 +49,7 @@ func TestCandidateDirsIncludeXDGData(t *testing.T) {
 func TestResolveDirFindsExistingCandidate(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", root)
-	t.Setenv("HOME", filepath.Join(root, "home"))
+	setHomeEnv(t, filepath.Join(root, "home"))
 
 	snapshotDir := filepath.Join(root, "patchline", "snapshots")
 	if err := os.MkdirAll(snapshotDir, 0o755); err != nil {
@@ -59,7 +70,7 @@ func TestResolveDirReturnsFirstCandidateWhenMissing(t *testing.T) {
 	xdgHome := filepath.Join(root, "xdg")
 	home := filepath.Join(root, "home")
 	t.Setenv("XDG_DATA_HOME", xdgHome)
-	t.Setenv("HOME", home)
+	setHomeEnv(t, home)
 
 	resolved, candidates := ResolveDir("")
 	want := filepath.Join(xdgHome, "patchline", "snapshots")
