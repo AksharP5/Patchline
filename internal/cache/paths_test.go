@@ -3,6 +3,7 @@ package cache
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -90,5 +91,37 @@ func TestResolveDirReturnsEmptyWhenNoCandidatesExist(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected candidate %s, got %#v", want, candidates)
+	}
+}
+
+func TestCandidateDirsIncludeLocalAppDataOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
+
+	root := t.TempDir()
+	t.Setenv("LOCALAPPDATA", root)
+	t.Setenv("XDG_CACHE_HOME", "")
+	setHomeEnv(t, filepath.Join(root, "home"))
+
+	candidates := CandidateDirs()
+	wantLocal := filepath.Join(root, "opencode", "node_modules")
+	wantHome := filepath.Join(root, "home", "AppData", "Local", "opencode", "node_modules")
+
+	foundLocal := false
+	foundHome := false
+	for _, candidate := range candidates {
+		if candidate == wantLocal {
+			foundLocal = true
+		}
+		if candidate == wantHome {
+			foundHome = true
+		}
+	}
+	if !foundLocal {
+		t.Fatalf("expected candidate %s, got %#v", wantLocal, candidates)
+	}
+	if !foundHome {
+		t.Fatalf("expected candidate %s, got %#v", wantHome, candidates)
 	}
 }
