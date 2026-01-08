@@ -102,6 +102,39 @@ func TestFetchPackageInfoInvalidJSON(t *testing.T) {
 	}
 }
 
+func TestFetchPackageInfoUsesDefaults(t *testing.T) {
+	name := "pkg"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertRequestPath(t, r, name)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"name":"pkg","dist-tags":{"latest":"2.0.0"},"versions":{"2.0.0":{},"1.0.0":{}}}`))
+	}))
+	defer server.Close()
+
+	prevClient := defaultHTTPClient
+	prevURL := defaultRegistryBaseURL
+	defaultHTTPClient = server.Client()
+	defaultRegistryBaseURL = server.URL
+	defer func() {
+		defaultHTTPClient = prevClient
+		defaultRegistryBaseURL = prevURL
+	}()
+
+	info, err := FetchPackageInfo(context.Background(), name)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info.Name != "pkg" {
+		t.Fatalf("expected name to be pkg, got %q", info.Name)
+	}
+	if info.Latest != "2.0.0" {
+		t.Fatalf("expected latest to be 2.0.0, got %q", info.Latest)
+	}
+	if len(info.Versions) != 2 || info.Versions[0] != "1.0.0" || info.Versions[1] != "2.0.0" {
+		t.Fatalf("unexpected versions list: %#v", info.Versions)
+	}
+}
+
 func assertRequestPath(t *testing.T, r *http.Request, name string) {
 	t.Helper()
 	want := "/" + url.PathEscape(name)
