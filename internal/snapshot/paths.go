@@ -32,11 +32,19 @@ func CandidateDirs() []string {
 		dirs = append(dirs, filepath.Join(dataHome, "patchline", "snapshots"))
 	}
 
+	if runtime.GOOS == "windows" {
+		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+			dirs = append(dirs, filepath.Join(localAppData, "patchline", "snapshots"))
+		}
+	}
+
 	home, err := os.UserHomeDir()
 	if err == nil && home != "" {
 		switch runtime.GOOS {
 		case "darwin":
 			dirs = append(dirs, filepath.Join(home, "Library", "Application Support", "patchline", "snapshots"))
+		case "windows":
+			dirs = append(dirs, filepath.Join(home, "AppData", "Local", "patchline", "snapshots"))
 		default:
 			dirs = append(dirs, filepath.Join(home, ".local", "share", "patchline", "snapshots"))
 		}
