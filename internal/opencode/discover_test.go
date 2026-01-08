@@ -3,6 +3,7 @@ package opencode
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -244,7 +245,7 @@ func TestDiscoverUsesCustomConfigDir(t *testing.T) {
 }
 
 func TestGlobalConfigCandidatesIncludeWindowsEnv(t *testing.T) {
-	if os.Getenv("OS") != "Windows_NT" {
+	if runtime.GOOS != "windows" {
 		t.Skip("windows only")
 	}
 
@@ -278,7 +279,7 @@ func TestGlobalConfigCandidatesIncludeWindowsEnv(t *testing.T) {
 }
 
 func TestDefaultLocalPluginDirsIncludeWindowsEnv(t *testing.T) {
-	if os.Getenv("OS") != "Windows_NT" {
+	if runtime.GOOS != "windows" {
 		t.Skip("windows only")
 	}
 

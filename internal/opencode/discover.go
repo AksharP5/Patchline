@@ -179,21 +179,23 @@ func resolveGlobalConfig(override string) (string, error) {
 
 func globalConfigCandidates() []string {
 	paths := []string{}
-	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
+	configHome := os.Getenv("XDG_CONFIG_HOME")
+	if configHome != "" {
 		paths = append(paths, filepath.Join(configHome, "opencode", "opencode.json"))
-	}
-	if appData := os.Getenv("APPDATA"); appData != "" {
-		paths = append(paths, filepath.Join(appData, "opencode", "opencode.json"))
-	}
-	if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
-		paths = append(paths, filepath.Join(localAppData, "opencode", "opencode.json"))
-	}
+	} else {
+		if appData := os.Getenv("APPDATA"); appData != "" {
+			paths = append(paths, filepath.Join(appData, "opencode", "opencode.json"))
+		}
+		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+			paths = append(paths, filepath.Join(localAppData, "opencode", "opencode.json"))
+		}
 
-	home, err := os.UserHomeDir()
-	if err == nil && home != "" {
-		paths = append(paths, filepath.Join(home, ".config", "opencode", "opencode.json"))
-		paths = append(paths, filepath.Join(home, "AppData", "Roaming", "opencode", "opencode.json"))
-		paths = append(paths, filepath.Join(home, "AppData", "Local", "opencode", "opencode.json"))
+		home, err := os.UserHomeDir()
+		if err == nil && home != "" {
+			paths = append(paths, filepath.Join(home, ".config", "opencode", "opencode.json"))
+			paths = append(paths, filepath.Join(home, "AppData", "Roaming", "opencode", "opencode.json"))
+			paths = append(paths, filepath.Join(home, "AppData", "Local", "opencode", "opencode.json"))
+		}
 	}
 
 	return uniqueStrings(paths)
@@ -201,21 +203,23 @@ func globalConfigCandidates() []string {
 
 func defaultLocalPluginDirs(projectRoot string, customConfigDir string) []string {
 	paths := []string{}
-	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
+	configHome := os.Getenv("XDG_CONFIG_HOME")
+	if configHome != "" {
 		paths = append(paths, filepath.Join(configHome, "opencode", "plugin"))
-	}
-	if appData := os.Getenv("APPDATA"); appData != "" {
-		paths = append(paths, filepath.Join(appData, "opencode", "plugin"))
-	}
-	if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
-		paths = append(paths, filepath.Join(localAppData, "opencode", "plugin"))
-	}
+	} else {
+		if appData := os.Getenv("APPDATA"); appData != "" {
+			paths = append(paths, filepath.Join(appData, "opencode", "plugin"))
+		}
+		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+			paths = append(paths, filepath.Join(localAppData, "opencode", "plugin"))
+		}
 
-	home, err := os.UserHomeDir()
-	if err == nil && home != "" {
-		paths = append(paths, filepath.Join(home, ".config", "opencode", "plugin"))
-		paths = append(paths, filepath.Join(home, "AppData", "Roaming", "opencode", "plugin"))
-		paths = append(paths, filepath.Join(home, "AppData", "Local", "opencode", "plugin"))
+		home, err := os.UserHomeDir()
+		if err == nil && home != "" {
+			paths = append(paths, filepath.Join(home, ".config", "opencode", "plugin"))
+			paths = append(paths, filepath.Join(home, "AppData", "Roaming", "opencode", "plugin"))
+			paths = append(paths, filepath.Join(home, "AppData", "Local", "opencode", "plugin"))
+		}
 	}
 
 	if projectRoot != "" {
