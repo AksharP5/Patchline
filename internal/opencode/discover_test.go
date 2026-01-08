@@ -3,6 +3,7 @@ package opencode
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -240,5 +241,73 @@ func TestDiscoverUsesCustomConfigDir(t *testing.T) {
 	}
 	if !foundCustom || !foundLocal {
 		t.Fatalf("expected custom config dir and local plugin")
+	}
+}
+
+func TestGlobalConfigCandidatesIncludeWindowsEnv(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
+
+	root := t.TempDir()
+	appData := filepath.Join(root, "roaming")
+	localAppData := filepath.Join(root, "local")
+	t.Setenv("APPDATA", appData)
+	t.Setenv("LOCALAPPDATA", localAppData)
+	t.Setenv("XDG_CONFIG_HOME", "")
+
+	candidates := globalConfigCandidates()
+	wantApp := filepath.Join(appData, "opencode", "opencode.json")
+	wantLocal := filepath.Join(localAppData, "opencode", "opencode.json")
+
+	foundApp := false
+	foundLocal := false
+	for _, candidate := range candidates {
+		if candidate == wantApp {
+			foundApp = true
+		}
+		if candidate == wantLocal {
+			foundLocal = true
+		}
+	}
+	if !foundApp {
+		t.Fatalf("expected candidate %s, got %#v", wantApp, candidates)
+	}
+	if !foundLocal {
+		t.Fatalf("expected candidate %s, got %#v", wantLocal, candidates)
+	}
+}
+
+func TestDefaultLocalPluginDirsIncludeWindowsEnv(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
+
+	root := t.TempDir()
+	appData := filepath.Join(root, "roaming")
+	localAppData := filepath.Join(root, "local")
+	t.Setenv("APPDATA", appData)
+	t.Setenv("LOCALAPPDATA", localAppData)
+	t.Setenv("XDG_CONFIG_HOME", "")
+
+	dirs := defaultLocalPluginDirs(root, "")
+	wantApp := filepath.Join(appData, "opencode", "plugin")
+	wantLocal := filepath.Join(localAppData, "opencode", "plugin")
+
+	foundApp := false
+	foundLocal := false
+	for _, dir := range dirs {
+		if dir == wantApp {
+			foundApp = true
+		}
+		if dir == wantLocal {
+			foundLocal = true
+		}
+	}
+	if !foundApp {
+		t.Fatalf("expected plugin dir %s, got %#v", wantApp, dirs)
+	}
+	if !foundLocal {
+		t.Fatalf("expected plugin dir %s, got %#v", wantLocal, dirs)
 	}
 }

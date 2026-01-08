@@ -3,6 +3,7 @@ package snapshot
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -79,5 +80,37 @@ func TestResolveDirReturnsFirstCandidateWhenMissing(t *testing.T) {
 	}
 	if len(candidates) == 0 {
 		t.Fatalf("expected candidates, got %#v", candidates)
+	}
+}
+
+func TestCandidateDirsIncludeLocalAppDataOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows only")
+	}
+
+	root := t.TempDir()
+	t.Setenv("LOCALAPPDATA", root)
+	t.Setenv("XDG_DATA_HOME", "")
+	setHomeEnv(t, filepath.Join(root, "home"))
+
+	candidates := CandidateDirs()
+	wantLocal := filepath.Join(root, "patchline", "snapshots")
+	wantHome := filepath.Join(root, "home", "AppData", "Local", "patchline", "snapshots")
+
+	foundLocal := false
+	foundHome := false
+	for _, candidate := range candidates {
+		if candidate == wantLocal {
+			foundLocal = true
+		}
+		if candidate == wantHome {
+			foundHome = true
+		}
+	}
+	if !foundLocal {
+		t.Fatalf("expected candidate %s, got %#v", wantLocal, candidates)
+	}
+	if !foundHome {
+		t.Fatalf("expected candidate %s, got %#v", wantHome, candidates)
 	}
 }

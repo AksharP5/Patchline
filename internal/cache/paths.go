@@ -3,6 +3,7 @@ package cache
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func ResolveDir(override string) (string, []string) {
@@ -26,9 +27,20 @@ func CandidateDirs() []string {
 		dirs = append(dirs, filepath.Join(cacheHome, "opencode", "node_modules"))
 	}
 
+	if runtime.GOOS == "windows" {
+		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+			dirs = append(dirs, filepath.Join(localAppData, "opencode", "node_modules"))
+		}
+	}
+
 	home, err := os.UserHomeDir()
 	if err == nil && home != "" {
-		dirs = append(dirs, filepath.Join(home, ".cache", "opencode", "node_modules"))
+		switch runtime.GOOS {
+		case "windows":
+			dirs = append(dirs, filepath.Join(home, "AppData", "Local", "opencode", "node_modules"))
+		default:
+			dirs = append(dirs, filepath.Join(home, ".cache", "opencode", "node_modules"))
+		}
 	}
 
 	return uniqueStrings(dirs)
