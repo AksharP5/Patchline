@@ -11,7 +11,9 @@ const tar = require("tar");
 const {
   getArchiveExtension,
   getBinaryName,
+  getCandidateBinaryPaths,
   getDownloadUrl,
+  getInstalledBinaryName,
   resolveArch,
   resolvePlatform,
 } = require("../lib/installer");
@@ -53,6 +55,18 @@ async function extractArchive(archivePath, extractDir, extension) {
   await tar.x({ file: archivePath, cwd: extractDir });
 }
 
+async function findExistingPath(paths) {
+  for (const candidate of paths) {
+    try {
+      await fsPromises.access(candidate);
+      return candidate;
+    } catch (error) {
+      continue;
+    }
+  }
+  return "";
+}
+
 async function install() {
   const version = packageJson.version;
   const goos = resolvePlatform(process.platform);
@@ -69,8 +83,15 @@ async function install() {
   await extractArchive(archivePath, extractDir, extension);
 
   const binaryName = getBinaryName(goos);
-  const extractedBinaryPath = path.join(extractDir, binaryName);
-  const targetPath = path.join(__dirname, "..", "bin", binaryName);
+  const candidates = getCandidateBinaryPaths(extractDir, version, goos, goarch);
+  const extractedBinaryPath = await findExistingPath(candidates);
+
+  if (!extractedBinaryPath) {
+    throw new Error(`binary ${binaryName} not found in archive`);
+  }
+
+  const installedBinaryName = getInstalledBinaryName(goos);
+  const targetPath = path.join(__dirname, "..", "bin", installedBinaryName);
 
   await fsPromises.mkdir(path.dirname(targetPath), { recursive: true });
   await fsPromises.copyFile(extractedBinaryPath, targetPath);
