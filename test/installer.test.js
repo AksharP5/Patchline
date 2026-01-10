@@ -89,3 +89,9 @@ test("verifyChecksum rejects mismatched hash", async () => {
     /checksum mismatch/,
   );
 });
+
+test("shouldSkipDownload honors env flag", () => {
+  assert.equal(installer.shouldSkipDownload({ PATCHLINE_SKIP_DOWNLOAD: "1" }), true);
+  assert.equal(installer.shouldSkipDownload({ PATCHLINE_SKIP_DOWNLOAD: "true" }), true);
+  assert.equal(installer.shouldSkipDownload({ PATCHLINE_SKIP_DOWNLOAD: "" }), false);
+});
