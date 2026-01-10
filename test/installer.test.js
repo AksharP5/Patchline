@@ -59,7 +59,7 @@ test("getChecksumsUrl builds release checksum URL", () => {
 });
 
 test("parseChecksums maps filenames to hashes", () => {
-  const text = "abc123  file-one.tar.gz\nfff999  file-two.zip\n";
+  const text = "abc123  file-one.tar.gz\nfff999  *file-two.zip\n";
   const checksums = installer.parseChecksums(text);
 
   assert.equal(checksums["file-one.tar.gz"], "abc123");
