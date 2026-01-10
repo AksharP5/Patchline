@@ -92,3 +92,24 @@ func TestPrintListHints(t *testing.T) {
 		t.Fatalf("expected cache-dir hint, got %q", output)
 	}
 }
+
+func TestListCommandNoPlugins(t *testing.T) {
+	root := t.TempDir()
+	opts := CommonOptions{
+		ProjectRoot: root,
+		CacheDir:    root,
+	}
+
+	var out bytes.Buffer
+	var err bytes.Buffer
+	code := listCommand(opts, &out, &err)
+	if code != 0 {
+		t.Fatalf("expected success, got %d", code)
+	}
+	if err.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", err.String())
+	}
+	if !strings.Contains(out.String(), "No plugins found.") {
+		t.Fatalf("expected no plugins message, got %q", out.String())
+	}
+}
