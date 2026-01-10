@@ -19,6 +19,7 @@ const {
   parseChecksums,
   resolveArch,
   resolvePlatform,
+  shouldSkipDownload,
   verifyChecksum,
 } = require("../lib/installer");
 
@@ -81,6 +82,11 @@ async function findExistingPath(paths) {
 }
 
 async function install() {
+  if (shouldSkipDownload(process.env)) {
+    console.log("Skipping Patchline download because PATCHLINE_SKIP_DOWNLOAD is set.");
+    return;
+  }
+
   const version = packageJson.version;
   const goos = resolvePlatform(process.platform);
   const goarch = resolveArch(process.arch);
