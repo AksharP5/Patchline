@@ -26,6 +26,17 @@ archives:
       - goos: windows
         format: zip
 
+brews:
+  - name: patchline
+    repository:
+      owner: AksharP5
+      name: tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/AksharP5/Patchline"
+    description: "Streamline OpenCode plugin updates."
+    install: |
+      bin.install "patchline"
+
 checksum:
   name_template: "checksums.txt"
 
