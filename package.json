@@ -1,0 +1,32 @@
+{
+  "name": "patchline",
+  "version": "0.1.0",
+  "description": "Streamline OpenCode plugin updates.",
+  "license": "UNLICENSED",
+  "bin": {
+    "patchline": "bin/patchline"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install.js",
+    "test": "node --test test/installer.test.js"
+  },
+  "files": [
+    "bin",
+    "scripts",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "dependencies": {
+    "extract-zip": "^2.0.1",
+    "tar": "^6.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AksharP5/Patchline.git"
+  },
+  "homepage": "https://github.com/AksharP5/Patchline"
+}
