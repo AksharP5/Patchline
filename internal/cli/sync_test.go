@@ -65,8 +65,8 @@ func TestSyncCommandMissingCacheDir(t *testing.T) {
 	if out.Len() != 0 {
 		t.Fatalf("expected no stdout output, got %q", out.String())
 	}
-	if !strings.Contains(errOut.String(), "cache directory not found") {
-		t.Fatalf("expected cache dir error, got %q", errOut.String())
+	if !strings.Contains(errOut.String(), "failed to scan cache directory") {
+		t.Fatalf("expected cache scan error, got %q", errOut.String())
 	}
 }
 
