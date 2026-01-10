@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/AksharP5/Patchline/internal/cache"
@@ -43,6 +45,28 @@ func TestBuildSyncPlan(t *testing.T) {
 	row = findSyncRow(plan.Rows, "local-plugin")
 	if row.Status != string(model.StatusUnmanaged) || row.Action != "skip" {
 		t.Fatalf("expected local unmanaged/skip, got %s/%s", row.Status, row.Action)
+	}
+}
+
+func TestSyncCommandMissingCacheDir(t *testing.T) {
+	root := t.TempDir()
+	missing := root + "/missing"
+	opts := CommonOptions{
+		ProjectRoot: root,
+		CacheDir:    missing,
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := syncCommand(opts, &out, &errOut)
+	if code != 1 {
+		t.Fatalf("expected error exit code, got %d", code)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no stdout output, got %q", out.String())
+	}
+	if !strings.Contains(errOut.String(), "cache directory not found") {
+		t.Fatalf("expected cache dir error, got %q", errOut.String())
 	}
 }
 
