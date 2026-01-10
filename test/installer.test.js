@@ -1,4 +1,7 @@
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
@@ -46,4 +49,43 @@ test("getCandidateBinaryPaths includes nested archive folder", () => {
     path.join("/", "tmp", "patchline"),
     path.join("/", "tmp", "patchline_1.2.3_linux_amd64", "patchline"),
   ]);
+});
+
+test("getChecksumsUrl builds release checksum URL", () => {
+  assert.equal(
+    installer.getChecksumsUrl("1.2.3"),
+    "https://github.com/AksharP5/Patchline/releases/download/v1.2.3/checksums.txt",
+  );
+});
+
+test("parseChecksums maps filenames to hashes", () => {
+  const text = "abc123  file-one.tar.gz\nfff999  *file-two.zip\n";
+  const checksums = installer.parseChecksums(text);
+
+  assert.equal(checksums["file-one.tar.gz"], "abc123");
+  assert.equal(checksums["file-two.zip"], "fff999");
+});
+
+test("verifyChecksum succeeds for matching hash", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "patchline-hash-"));
+  const filePath = path.join(root, "test.txt");
+  fs.writeFileSync(filePath, "hello");
+
+  const hash = crypto.createHash("sha256").update("hello").digest("hex");
+  const checksums = { "test.txt": hash };
+
+  await installer.verifyChecksum(checksums, "test.txt", filePath);
+});
+
+test("verifyChecksum rejects mismatched hash", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "patchline-hash-"));
+  const filePath = path.join(root, "test.txt");
+  fs.writeFileSync(filePath, "hello");
+
+  const checksums = { "test.txt": "deadbeef" };
+
+  await assert.rejects(
+    () => installer.verifyChecksum(checksums, "test.txt", filePath),
+    /checksum mismatch/,
+  );
 });
