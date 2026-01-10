@@ -10,12 +10,16 @@ const tar = require("tar");
 
 const {
   getArchiveExtension,
+  getArchiveName,
   getBinaryName,
   getCandidateBinaryPaths,
+  getChecksumsUrl,
   getDownloadUrl,
   getInstalledBinaryName,
+  parseChecksums,
   resolveArch,
   resolvePlatform,
+  verifyChecksum,
 } = require("../lib/installer");
 
 const packageJson = require("../package.json");
@@ -47,6 +51,15 @@ async function downloadFile(url, destination) {
   await pipeline(response, fs.createWriteStream(destination));
 }
 
+async function downloadText(url) {
+  const response = await request(url);
+  const chunks = [];
+  for await (const chunk of response) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 async function extractArchive(archivePath, extractDir, extension) {
   if (extension === "zip") {
     await extractZip(archivePath, { dir: extractDir });
@@ -72,14 +85,21 @@ async function install() {
   const goos = resolvePlatform(process.platform);
   const goarch = resolveArch(process.arch);
   const extension = getArchiveExtension(goos);
+  const archiveName = getArchiveName(version, goos, goarch);
   const url = getDownloadUrl(version, goos, goarch);
+  const checksumsUrl = getChecksumsUrl(version);
 
   const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "patchline-"));
-  const archivePath = path.join(tempRoot, `patchline.${extension}`);
+  const archivePath = path.join(tempRoot, archiveName);
   const extractDir = path.join(tempRoot, "extract");
 
   await fsPromises.mkdir(extractDir, { recursive: true });
   await downloadFile(url, archivePath);
+
+  const checksumsText = await downloadText(checksumsUrl);
+  const checksums = parseChecksums(checksumsText);
+  await verifyChecksum(checksums, archiveName, archivePath);
+
   await extractArchive(archivePath, extractDir, extension);
 
   const binaryName = getBinaryName(goos);
