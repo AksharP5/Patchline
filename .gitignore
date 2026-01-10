@@ -4,6 +4,8 @@ AGENTS.md
 
 # Go build artifacts
 /bin/
+!/bin/
+!/bin/patchline
 /dist/
 /build/
 /release/

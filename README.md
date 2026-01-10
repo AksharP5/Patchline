@@ -18,9 +18,11 @@ brew install AksharP5/tap/patchline
 go install github.com/AksharP5/Patchline/cmd/patchline@latest
 ```
 
-### npm (planned)
+### npm
 
-A small npm wrapper is planned for `npm i -g` installs.
+```
+npm i -g patchline
+```
 
 ## Usage
 
