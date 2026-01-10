@@ -18,6 +18,10 @@ test("normalizeTag rejects invalid semver", () => {
   assert.throws(() => normalizeTag("v1"), /invalid semver/);
 });
 
+test("normalizeTag rejects leading zeros", () => {
+  assert.throws(() => normalizeTag("v01.2.3"), /invalid semver/);
+});
+
 test("updatePackageVersion rewrites package.json version", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "patchline-npm-"));
   const packagePath = path.join(root, "package.json");
