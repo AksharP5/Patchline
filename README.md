@@ -56,9 +56,3 @@ patchline version
 
 - If plugins show as `missing`, run OpenCode to install them.
 - If Patchline cannot find your config or cache, pass `--global-config` or `--cache-dir`.
-- Windows support is best-effort. Overrides are the escape hatch for nonstandard paths.
-
-## Release
-
-- Push a tag like `v0.1.0` to trigger the GoReleaser workflow.
-- Ensure the `HOMEBREW_TAP_GITHUB_TOKEN` secret exists to update `AksharP5/tap`.
