@@ -1,4 +1,4 @@
-name: Publish npm
+name: Publish Package
 
 on:
   push:
@@ -19,12 +19,11 @@ jobs:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
       - run: npm ci
-        env:
-          PATCHLINE_SKIP_DOWNLOAD: "1"
       - run: node scripts/prepare-npm-version.js
         env:
           NPM_VERSION: ${{ github.ref_name }}
       - run: npm run build --if-present
       - run: npm test
       - run: npm publish --provenance --access public
+
 
