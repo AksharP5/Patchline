@@ -16,7 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          registry-url: "https://registry.npmjs.org"
       - run: npm install
         env:
           PATCHLINE_SKIP_DOWNLOAD: "1"
@@ -24,4 +23,7 @@ jobs:
         env:
           NPM_VERSION: ${{ github.ref_name }}
       - run: npm test
+      - run: echo "registry=https://registry.npmjs.org/" > "$RUNNER_TEMP/npmrc"
       - run: npm publish --provenance --access public
+        env:
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/npmrc
