@@ -30,7 +30,7 @@ brews:
   - name: patchline
     repository:
       owner: AksharP5
-      name: tap
+      name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/AksharP5/Patchline"
     description: "Streamline OpenCode plugin updates."
