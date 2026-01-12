@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/AksharP5/Patchline/compare/patchline-v1.1.0...patchline-v1.1.1) (2026-01-12)
+
+
+### Documentation
+
+* update README ([d9bf179](https://github.com/AksharP5/Patchline/commit/d9bf179ff1493d85a4b06f9956321b8e6f7e50f9))
+
 ## [1.1.0](https://github.com/AksharP5/Patchline/compare/patchline-v1.0.0...patchline-v1.1.0) (2026-01-10)
 
 
