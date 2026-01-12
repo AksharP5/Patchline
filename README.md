@@ -1,6 +1,6 @@
 # Patchline
 
-Streamline OpenCode plugin updates by inspecting config and cache state, pinning versions, and invalidating stale cache entries.
+Streamline OpenCode plugin updates 
 
 Patchline does not install plugins or run OpenCode. After running Patchline, launch OpenCode to reinstall or refresh plugins.
 
@@ -32,7 +32,7 @@ patchline outdated
 patchline sync
 patchline upgrade <plugin> --to 1.2.3
 patchline upgrade <plugin> --major|--minor|--patch
-patchline upgrade --all --minor
+patchline upgrade --all 
 patchline snapshot <plugin>
 patchline rollback <plugin>
 patchline version
@@ -45,7 +45,6 @@ patchline version
 - `--cache-dir <dir>`: override the OpenCode plugin cache directory.
 - `--snapshot-dir <dir>`: override where snapshots are stored.
 - `--local-dir <dir>`: add an extra local plugin directory (repeatable).
-- `--offline`: skip npm registry calls.
 
 ## Status meanings
 
@@ -56,5 +55,6 @@ patchline version
 
 ## Troubleshooting
 
+- Feel free to submit an issue
 - If plugins show as `missing`, run OpenCode to install them.
 - If Patchline cannot find your config or cache, pass `--global-config` or `--cache-dir`.
