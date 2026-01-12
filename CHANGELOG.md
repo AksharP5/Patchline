@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/AksharP5/Patchline/compare/v1.3.0...v1.3.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* use pat for release-please tags ([768ddd9](https://github.com/AksharP5/Patchline/commit/768ddd9c76b06e62749bae33e0fbbd4ecdffbe46))
+
 ## [1.3.0](https://github.com/AksharP5/Patchline/compare/v1.2.0...v1.3.0) (2026-01-12)
 
 
